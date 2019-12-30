@@ -139,7 +139,7 @@ public class Map {
                             }
                             human.setLastBreedIteration(iterationIndex);
                         }
-                        if(human.getTTL() <= 1){
+                        if(human.getTTL() < 1){
                             map[x][y] = null;
                             humansAmount -= 1;
                             System.out.println("HUMAN DIED");
@@ -162,7 +162,7 @@ public class Map {
                             }
                             tree.setLastBreedIteration(iterationIndex);
                         }
-                        if(tree.getTTL() <= 1){
+                        if(tree.getTTL() < 1){
                             map[x][y] = null;
                             treesAmount -= 1;
                             System.out.println("TREE DIED");
@@ -185,7 +185,7 @@ public class Map {
                             }
                             rabbit.setLastBreedIteration(iterationIndex);
                         }
-                        if(rabbit.getTTL() <= 1){
+                        if(rabbit.getTTL() < 1){
                             map[x][y] = null;
                             rabbitsAmount -= 1;
                             System.out.println("RABBIT DIED");
@@ -208,7 +208,7 @@ public class Map {
                             }
                             cabbage.setLastBreedIteration(iterationIndex);
                         }
-                        if(cabbage.getTTL() <= 1){
+                        if(cabbage.getTTL() < 1){
                             map[x][y] = null;
                             cabbagesAmount -= 1;
                             System.out.println("CABBAGE DIED");
@@ -231,7 +231,7 @@ public class Map {
                             }
                             wolf.setLastBreedIteration(iterationIndex);
                         }
-                        if(wolf.getTTL() <= 1){
+                        if(wolf.getTTL() < 1){
                             map[x][y] = null;
                             wolvesAmount -= 1;
                             System.out.println("WOLF DIED");
@@ -281,6 +281,18 @@ public class Map {
         return points;
     }
 
+    public Point getRandomFreeSurroundingPoint(int x, int y){
+        List<Point> candidates = new LinkedList<>();
+
+        for(Point point : getSurroundingPoints(x, y)){
+            if(map[point.x][point.y] == null){
+                candidates.add(point);
+            }
+        }
+
+        return candidates.size() != 0 ? candidates.get(random.nextInt(candidates.size())) : null;
+    }
+
     public ObjectType fetchType(Object object){
         if(object == null){
             return ObjectType.NULL;
@@ -306,7 +318,7 @@ public class Map {
 
     public String getMetadata(){
         return "HUMANS=" + humansAmount + " WOLVES=" + wolvesAmount + " RABBITS=" + rabbitsAmount +
-                "CABBAGES=" + cabbagesAmount + " TREES=" + treesAmount;
+                " CABBAGES=" + cabbagesAmount + " TREES=" + treesAmount;
     }
 
 }
