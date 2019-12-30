@@ -1,11 +1,11 @@
 package org.romanchi.services.implementations;
 
 import org.romanchi.models.*;
+import org.romanchi.models.Map;
 import org.romanchi.services.ModelationService;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Logger;
 import org.romanchi.models.ObjectType.*;
 
@@ -39,124 +39,166 @@ public class ModelationServiceImpl implements ModelationService {
                 Thread.sleep(1000);
             }
         }
+        System.out.println("END OF GAME");
+
     }
 
     public boolean iterate(int iteration){
+        moveAll();
+        calculateInterractions();
+        return map.iterate(iteration);
+    }
+
+    private void calculateInterractions() {
         for(int x = 0; x < map.getDimension(); x++){
             for(int y = 0; y < map.getDimension(); y++){
-                processCell(x, y);
+                List<Object> objectsInCell = map.get(x, y);
+                if(objectsInCell.size() > 1){
+                    interract(x, y, objectsInCell.get(0), objectsInCell.get(1));
+                }
             }
         }
-        if(!map.iterate(iteration)){
-            System.out.println("END OF GAME");
-            return false;
-        }
-        return true;
     }
+
+
+    public void interract(int x, int y, Object firstObject, Object secondObject){
+         switch (map.fetchType(firstObject)){
+             case HUMAN:{
+                 Human human = (Human) firstObject;
+                 switch (map.fetchType(secondObject)){
+                     case WOLF:{
+                         Wolf wolf = (Wolf) secondObject;
+                         if(human.isAngry()){
+                             map.remove(x, y, wolf);
+                             System.out.println("Human eat wolf");
+                         }else{
+                             map.remove(x, y, human);
+                             map.awareHumans(x, y);
+                             System.out.println("Wolf eat human");
+                         }
+                         break;
+                     }
+                     default:{
+                         break;
+                     }
+                 }
+                 break;
+             }
+             case WOLF:{
+                 Wolf wolf = (Wolf) firstObject;
+                 switch (map.fetchType(secondObject)){
+                     case HUMAN:{
+                         Human human = (Human) secondObject;
+                         if(human.isAngry()){
+                             map.remove(x, y, wolf);
+                             System.out.println("Human eat wolf");
+                         }else{
+                             map.remove(x, y, human);
+                             map.awareHumans(x, y);
+                             System.out.println("Wolf eat human");
+                         }
+                         break;
+                     }
+                     case RABBIT:{
+                         Rabbit rabbit = (Rabbit) secondObject;
+                         if(rabbit.isAngry()){
+                             if(random.nextBoolean()){
+                                 map.remove(x, y, rabbit);
+                                 System.out.println("Wolf eat rabbit");
+                             }
+                         }else{
+                             map.remove(x, y, rabbit);
+                             System.out.println("Wolf eat rabbit");
+                         }
+                         break;
+                     }
+                     case TREE:{
+                         Map.Point newPoint = map.getRandomSurroundingPoint(x, y);
+                         map.set(newPoint.getX(), newPoint.getY(), wolf);
+                         break;
+                     }
+                 }
+                 break;
+             }
+             case RABBIT:{
+                 Rabbit rabbit = (Rabbit) firstObject;
+                 switch (map.fetchType(secondObject)){
+                     case WOLF:{
+                         Wolf wolf = (Wolf) secondObject;
+                         if(rabbit.isAngry()){
+                             if(random.nextBoolean()){
+                                 map.remove(x, y, rabbit);
+                                 System.out.println("Wolf eat rabbit");
+                             }
+                         }else{
+                             map.remove(x, y, rabbit);
+                             System.out.println("Wolf eat rabbit");
+                         }
+                         break;
+                     }
+                     case CABBAGE:{
+                         Cabbage cabbage = (Cabbage) secondObject;
+                         map.remove(x, y, cabbage);
+                         System.out.println("Rabbit eat cabbage");
+                         break;
+                     }
+                 }
+                 break;
+             }
+             case CABBAGE:{
+                 Cabbage cabbage = (Cabbage) firstObject;
+                 switch (map.fetchType(secondObject)){
+                     case RABBIT:{
+                         Rabbit rabbit = (Rabbit) secondObject;
+                         map.remove(x, y, cabbage);
+                         System.out.println("Rabbit eat cabbage");
+                         break;
+                     }
+                 }
+                 break;
+             }
+             case TREE:{
+                 Tree tree = (Tree) firstObject;
+                 switch (map.fetchType(secondObject)){
+                     case WOLF:{
+                         Wolf wolf = (Wolf) secondObject;
+                         Map.Point newPoint = map.getRandomSurroundingPoint(x, y);
+                         map.set(newPoint.getX(), newPoint.getY(), wolf);
+                         break;
+                     }
+                 }
+                 break;
+             }
+         }
+    }
+
+    public void moveAll(){
+        for(int x = 0; x < map.getDimension(); x++){
+            for(int y = 0; y < map.getDimension(); y++){
+                for (Object object : map.get(x, y)) {
+                    if (Arrays.asList(ObjectType.HUMAN, ObjectType.RABBIT, ObjectType.WOLF)
+                            .contains(map.fetchType(object))) {
+                        Map.Point newPoint = map.getRandomSurroundingPoint(x, y);
+                        map.set(newPoint.getX(), newPoint.getY(), object);
+                    }
+                }
+            }
+        }
+
+    }
+
 
     public void processCell(int x, int y){
         switch (map.fetchType(map.get(x, y))){
             case WOLF:{
-                Wolf wolf = (Wolf) map.get(x, y);
-                List<Map.Point> surroundingPoints = map.getSurroundingPoints(x, y);
-                for(Map.Point point : surroundingPoints){
-                    ObjectType objectType = map.fetchType(map.get(point.getX(), point.getY()));
-                    if(objectType == ObjectType.HUMAN){
-                        Human human = (Human) map.get(point.getX(), point.getY());
-                        if(human.isAngry()){
-                            map.set(x, y, null);
-                            map.setWolvesAmount(map.getWolvesAmount() - 1);
-                            System.out.println("Human eat wolf");
-                            Map.Point freePoint = map.getRandomFreeSurroundingPoint(x, y);
-                            map.set(freePoint.getX(), freePoint.getY(), human);
-                            map.set(x, y, null);
-                        }else{
-                            map.set(point.getX(), point.getY(), null);
-                            map.setHumansAmount(map.getHumansAmount() - 1);
-                            System.out.println("Wolf eat human");
-                            Map.Point freePoint = map.getRandomFreeSurroundingPoint(point.getX(), point.getY());
-                            map.set(freePoint.getX(), freePoint.getY(), wolf);
-                            map.set(x, y, null);
-                            for(Map.Point pnt : surroundingPoints){
-                                if(pnt.equals(point)){
-                                    continue;
-                                }
-                                if(map.fetchType(map.get(pnt.getX(), pnt.getY()))
-                                        .equals(ObjectType.HUMAN)){
-                                    Human witness = (Human) map.get(pnt.getX(), pnt.getY());
-                                    witness.setAngry(true);
-                                }
-                            }
-                        }
-                    }else if(objectType == ObjectType.RABBIT){
-                        Rabbit rabbit = (Rabbit) map.get(point.getX(), point.getY());
-                        map.set(point.getX(), point.getY(), null);
-                        map.setRabbitsAmount(map.getRabbitsAmount() - 1);
-                        Map.Point freePoint = map.getRandomFreeSurroundingPoint(x, y);
-                        map.set(freePoint.getX(), freePoint.getY(), wolf);
-                        map.set(x, y, null);
-                        System.out.println("Wolf eat rabbit");
-                    }
-                }
 
                 break;
             }
             case HUMAN:{
-                Human human = (Human) map.get(x, y);
-                List<Map.Point> surroundingPoints = map.getSurroundingPoints(x, y);
-                for(Map.Point point : surroundingPoints){
-                    ObjectType objectType = map.fetchType(map.get(point.getX(), point.getY()));
-                    if(objectType == ObjectType.WOLF) {
-                        if(human.isAngry()){
-                            map.set(point.getX(), point.getY(), null);
-                            map.setWolvesAmount(map.getWolvesAmount() - 1);
-                            Map.Point freePoint = map.getRandomFreeSurroundingPoint(x, y);
-                            map.set(freePoint.getX(), freePoint.getY(), human);
-                            map.set(x, y, null);
-                            System.out.println("Human eat wolf");
-                        }else{
-                            map.set(x, y, null);
-                            map.setHumansAmount(map.getHumansAmount() - 1);
-                            System.out.println("Wolf eat human");
-                            Map.Point freePoint = map.getRandomFreeSurroundingPoint(point.getX(), point.getY());
-                            map.set(freePoint.getX(), freePoint.getY(), map.get(point.getX(), point.getY()));
-                            map.set(x, y, null);
-                            for(Map.Point pnt : surroundingPoints){
-                                if(pnt.equals(point)){
-                                    continue;
-                                }
-                                if(map.fetchType(map.get(pnt.getX(), pnt.getY()))
-                                        .equals(ObjectType.HUMAN)){
-                                    Human witness = (Human) map.get(pnt.getX(), pnt.getY());
-                                    witness.setAngry(true);
-                                }
-                            }
-                        }
-                    }
-                }
+
                 break;
             }
             case RABBIT:{
-                List<Map.Point> surroundingPoints = map.getSurroundingPoints(x, y);
-                for(Map.Point point : surroundingPoints){
-                    ObjectType objectType = map.fetchType(map.get(point.getX(), point.getY()));
-                    switch (objectType) {
-                        case WOLF:{
-                            if(random.nextBoolean()){
-                                map.set(x, y, null);
-                                map.setRabbitsAmount(map.getRabbitsAmount() - 1);
-                                System.out.println("Wolf eat rabbit");
-                            }
-                            break;
-                        }
-                        case CABBAGE:{
-                            map.set(point.getX(), point.getY(), null);
-                            map.setCabbagesAmount(map.getCabbagesAmount() - 1);
-                            System.out.println("Rabbit eat cabbage");
-                            break;
-                        }
-                    }
-                }
                 break;
             }
         }
