@@ -12,7 +12,7 @@ public class Human {
 
     public boolean isAbleToBreed(int currentIteration) {
         return (35 * 365 < TTL && TTL < 50 * 365)
-                && (currentIteration - lastBreedIteration > 365 * breedFrequency) ;
+                && (currentIteration - lastBreedIteration > 365 * breedFrequency);
     }
 
     @Override

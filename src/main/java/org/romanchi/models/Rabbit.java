@@ -13,7 +13,7 @@ public class Rabbit {
 
     public boolean isAbleToBreed(int currentIteration) {
         return (365 < TTL && TTL < 4 * 365)
-                && (currentIteration - lastBreedIteration > 365 * breedFrequency) ;
+                && (currentIteration - lastBreedIteration > 365 * breedFrequency);
     }
 
     @Override

@@ -1,6 +1,8 @@
 package org.romanchi.models;
 
 import lombok.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -26,9 +28,7 @@ public class Map {
     private int cabbagesAmount;
     @Getter @Setter
     private int treesAmount;
-
-
-
+    private boolean debugMode;
 
     @Getter
     @EqualsAndHashCode
@@ -53,7 +53,8 @@ public class Map {
                int humansAmount,
                int rabbitsAmount,
                int cabbagesAmount,
-               int treesAmount){
+               int treesAmount,
+               boolean debugMode){
         if(wolvesAmount + humansAmount + rabbitsAmount + cabbagesAmount + treesAmount
                 >= dimension * dimension){
             throw new IllegalArgumentException("Кількість об'єктів перевищує розмір поля.");
@@ -65,6 +66,7 @@ public class Map {
         this.rabbitsAmount = rabbitsAmount;
         this.cabbagesAmount = cabbagesAmount;
         this.treesAmount = treesAmount;
+        this.debugMode = debugMode;
     }
 
     public void initialize(){
@@ -117,57 +119,13 @@ public class Map {
 
     public void remove(int x, int y, Object object) {
         map[x][y].remove(object);
-        switch (fetchType(object)){
-            case RABBIT:{
-                rabbitsAmount -=1 ;
-                break;
-            }
-            case WOLF:{
-                wolvesAmount -= 1;
-                break;
-            }
-            case HUMAN:{
-                humansAmount -= 1;
-                break;
-            }
-            case CABBAGE:{
-                cabbagesAmount -= 1;
-                break;
-            }
-            case TREE:{
-                treesAmount -= 1;
-                break;
-            }
-        }
     }
 
     public void remove(ListIterator iterator,Object object) {
         iterator.remove();
-        switch (fetchType(object)){
-            case RABBIT:{
-                rabbitsAmount -=1 ;
-                break;
-            }
-            case WOLF:{
-                wolvesAmount -= 1;
-                break;
-            }
-            case HUMAN:{
-                humansAmount -= 1;
-                break;
-            }
-            case CABBAGE:{
-                cabbagesAmount -= 1;
-                break;
-            }
-            case TREE:{
-                treesAmount -= 1;
-                break;
-            }
-        }
     }
 
-    private Point getRandomEmptyPoint(){
+    public Point getRandomEmptyPoint(){
         Point point = new Point();
         int iteration = 0;
         do{
@@ -182,11 +140,11 @@ public class Map {
         return point;
     }
 
-    private Point getRandomEmptyPoint(int x, int y){
+    public Point getRandomEmptyPoint(int x, int y){
         Point point = new Point();
         int iteration = 0;
         do{
-            if(iteration > dimension * dimension - 1){
+            if(iteration > dimension * dimension){
                 return null;
             }
             point.x = random.nextInt(dimension);
@@ -206,21 +164,12 @@ public class Map {
                     switch (fetchType(object)){
                         case HUMAN:{
                             Human human = (Human) object;
-                            if(human.isAbleToBreed(iterationIndex)){
-                                for(int i = 0; i < human.getChildAmount(); i++){
-                                    Point point = getRandomEmptyPoint(x, y);
-                                    if(point == null){
-                                        return false;
-                                    }
-                                    set(point.x, point.y, new Human());
-                                    humansAmount += 1;
-                                }
-                                human.setLastBreedIteration(iterationIndex);
-                            }
-
                             if(human.getTTL()  < 1){
                                 remove(iterator, human);
-                                System.out.println("Human died");
+                                humansAmount -= 1;
+                                if(debugMode){
+                                    System.out.println("Human died");
+                                }
                             }else{
                                 human.setTTL(human.getTTL() - 1);
                             }
@@ -228,21 +177,12 @@ public class Map {
                         }
                         case WOLF:{
                             Wolf wolf = (Wolf) object;
-                            if(wolf.isAbleToBreed(iterationIndex)){
-                                for(int i = 0; i < wolf.getChildAmount(); i++){
-                                    Point point = getRandomEmptyPoint(x, y);
-                                    if(point == null){
-                                        return false;
-                                    }
-                                    set(point.x, point.y, new Human());
-                                    wolvesAmount += 1;
-                                }
-                                wolf.setLastBreedIteration(iterationIndex);
-                            }
-
                             if(wolf.getTTL()  < 1){
                                 remove(iterator, wolf);
-                                System.out.println("Wolf died");
+                                wolvesAmount -= 1;
+                                if(debugMode){
+                                    System.out.println("Wolf died");
+                                }
                             }else{
                                 wolf.setTTL(wolf.getTTL() - 1);
                             }
@@ -250,21 +190,13 @@ public class Map {
                         }
                         case RABBIT:{
                             Rabbit rabbit = (Rabbit) object;
-                            if(rabbit.isAbleToBreed(iterationIndex)){
-                                for(int i = 0; i < rabbit.getChildAmount(); i++){
-                                    Point point = getRandomEmptyPoint(x, y);
-                                    if(point == null){
-                                        return false;
-                                    }
-                                    set(point.x, point.y, new Human());
-                                    rabbitsAmount += 1;
-                                }
-                                rabbit.setLastBreedIteration(iterationIndex);
-                            }
 
                             if(rabbit.getTTL()  < 1){
                                 remove(iterator, rabbit);
-                                System.out.println("Rabbit died");
+                                rabbitsAmount -= 1;
+                                if(debugMode){
+                                    System.out.println("Rabbit died");
+                                }
                             }else{
                                 rabbit.setTTL(rabbit.getTTL() - 1);
                             }
@@ -278,7 +210,7 @@ public class Map {
                                     if(point == null){
                                         return false;
                                     }
-                                    set(point.x, point.y, new Human());
+                                    set(point.x, point.y, new Cabbage());
                                     cabbagesAmount += 1;
                                 }
                                 cabbage.setLastBreedIteration(iterationIndex);
@@ -286,7 +218,10 @@ public class Map {
 
                             if(cabbage.getTTL()  < 1){
                                 remove(iterator, cabbage);
-                                System.out.println("Cabbage died");
+                                cabbagesAmount -= 1;
+                                if(debugMode){
+                                    System.out.println("Cabbage died");
+                                }
                             }else{
                                 cabbage.setTTL(cabbage.getTTL() - 1);
                             }
@@ -300,7 +235,7 @@ public class Map {
                                     if(point == null){
                                         return false;
                                     }
-                                    set(point.x, point.y, new Human());
+                                    set(point.x, point.y, new Tree());
                                     treesAmount += 1;
                                 }
                                 tree.setLastBreedIteration(iterationIndex);
@@ -308,7 +243,10 @@ public class Map {
 
                             if(tree.getTTL()  < 1){
                                 remove(iterator, tree);
-                                System.out.println("Tree died");
+                                treesAmount -= 1;
+                                if(debugMode){
+                                    System.out.println("Tree died");
+                                }
                             }else{
                                 tree.setTTL(tree.getTTL() - 1);
                             }
@@ -320,7 +258,6 @@ public class Map {
         }
         return true;
     }
-
 
     public List<Point> getSurroundingPoints(int x, int y){
         List<Point> points = new LinkedList<>();
@@ -341,6 +278,7 @@ public class Map {
 
         return points;
     }
+
     public List<Point> getZone(int x, int y){
         List<Point> points = new LinkedList<>();
 
@@ -359,18 +297,6 @@ public class Map {
         }
 
         return points;
-    }
-
-    public Point getRandomFreeSurroundingPoint(int x, int y){
-        List<Point> candidates = new LinkedList<>();
-
-        for(Point point : getSurroundingPoints(x, y)){
-            if(map[point.x][point.y].size() == 0){
-                candidates.add(point);
-            }
-        }
-
-        return candidates.size() != 0 ? candidates.get(random.nextInt(candidates.size())) : null;
     }
 
     public Point getRandomSurroundingPoint(int x, int y){
